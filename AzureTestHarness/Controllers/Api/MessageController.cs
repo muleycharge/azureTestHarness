@@ -21,7 +21,7 @@ namespace AzureTestHarness.Controllers.Api
         public async Task<IActionResult> Get()
         {
             Guid messageId = Guid.NewGuid();
-            await _sender.Send(messageId).ConfigureAwait(false);
+            await _sender.SendTopic1(messageId).ConfigureAwait(false);
 
             return Ok(messageId);
         }
@@ -29,7 +29,7 @@ namespace AzureTestHarness.Controllers.Api
         [HttpGet("{messageId}")]
         public async Task<IActionResult> Get(Guid messageId)
         {
-            await _sender.Send(messageId).ConfigureAwait(false);
+            await _sender.SendTopic1(messageId).ConfigureAwait(false);
 
             return Ok(messageId);
         }

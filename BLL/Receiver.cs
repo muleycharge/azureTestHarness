@@ -24,7 +24,7 @@ namespace BLL
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to initialize {className} with options {@options}", nameof(Receiver), options.Value);
+                _logger.LogError(ex, "Failed to initialize {className} with options {@options}", nameof(Receiver), options.Value);
                 throw;
             }
         }

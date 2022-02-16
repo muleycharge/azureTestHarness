@@ -101,10 +101,6 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 
-# Click-Once directory
-Deploy/publish/
-Deploy/publish.zip
-
 # Publish Web Output
 *.Publish.xml
 

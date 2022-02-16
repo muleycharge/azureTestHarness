@@ -5,4 +5,15 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="azure.Messaging.ServiceBus" Version="7.6.0" />
+    <PackageReference Include="commandlineparser" Version="2.8.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.20.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BLL\BLL.csproj" />
+  </ItemGroup>
+
 </Project>

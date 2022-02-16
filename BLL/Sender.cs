@@ -1,9 +1,9 @@
 ﻿using Azure.Messaging.ServiceBus;
-using Azure.Messaging.ServiceBus.Administration;
 using Azure.Storage.Blobs;
 using BO.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
@@ -13,47 +13,48 @@ namespace BLL
     public class Sender
     {
         private readonly ILogger<Sender> _logger;
-        protected readonly ServiceBusAdministrationClient _serviceBusAdmin;
         protected readonly ServiceBusClient _client;
-        protected ServiceBusSender _sender;
-        private readonly BlobServiceClient _blobServiceClient;
+        protected Lazy<ServiceBusSender> _sender1;
+        protected Lazy<ServiceBusSender> _sender2;
         private readonly BlobContainerClient _blobContainerClient;
+
+
+
         public Sender(ILogger<Sender> logger, IOptions<AzureTestHarnessOptions> options)
         {
             _logger = logger;
             _logger.LogInformation("Initializing {className}", nameof(Sender));
             try
             {
-                _serviceBusAdmin = new ServiceBusAdministrationClient(options.Value.ServiceBus.ConnectionString);
-                Task.Factory.StartNew(async () =>
-                {
-                    if (!await _serviceBusAdmin.TopicExistsAsync(options.Value.ServiceBus.TestTopicName))
-                    {
-                        _logger.LogInformation("Creating topic {topicName}", options.Value.ServiceBus.TestTopicName);
-                        await _serviceBusAdmin.CreateTopicAsync(options.Value.ServiceBus.TestTopicName).ConfigureAwait(false);
-                    }
-                    if (!await _serviceBusAdmin.SubscriptionExistsAsync(options.Value.ServiceBus.TestTopicName, options.Value.ServiceBus.TestSubscriptionName))
-                    {
-                        _logger.LogInformation("Creating subscription {topicName}/{subscriptionName}", options.Value.ServiceBus.TestTopicName, options.Value.ServiceBus.TestSubscriptionName);
-                        await _serviceBusAdmin.CreateSubscriptionAsync(options.Value.ServiceBus.TestTopicName, options.Value.ServiceBus.TestSubscriptionName).ConfigureAwait(false);
-                    }
-                }).Wait();
 
 
                 _client = new ServiceBusClient(options.Value.ServiceBus.ConnectionString);
-                _sender = _client.CreateSender(options.Value.ServiceBus.TestTopicName);
-                _blobServiceClient = new BlobServiceClient(options.Value.BlobStorage.ConnectionString);
-                _blobContainerClient = _blobServiceClient.GetBlobContainerClient(options.Value.BlobStorage.TestContainerName);
+                _sender1 = new Lazy<ServiceBusSender>(() => _client.CreateSender(options.Value.ServiceBus.TestTopic1Name));
+                _sender2 = new Lazy<ServiceBusSender>(() => _client.CreateSender(options.Value.ServiceBus.TestTopic2Name));
+                BlobServiceClient blobServiceClient = new BlobServiceClient(options.Value.BlobStorage.ConnectionString);
+                _blobContainerClient = blobServiceClient.GetBlobContainerClient(options.Value.BlobStorage.TestContainerName);
                 _blobContainerClient.CreateIfNotExists();
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to initialize {className} with options {@options}", nameof(Sender), options.Value);
+                _logger.LogError(ex, "Failed to initialize {className} with options {@options}", nameof(Sender), options.Value);
                 throw;
             }
+        }
+
+        public Sender(string storageConnection, string storageContainerName, string busConnection, string topicName1)
+        {
+            _logger = Mock.Of<ILogger<Sender>>();
+            _client = new ServiceBusClient(busConnection);
+            _sender1 = new Lazy<ServiceBusSender>(() => _client.CreateSender(topicName1));
+            _sender2 = new Lazy<ServiceBusSender>(() => throw new InvalidOperationException("Not initialized to be able to use Topic 2"));
+            BlobServiceClient blobServiceClient = new BlobServiceClient(storageConnection);
+            _blobContainerClient = blobServiceClient.GetBlobContainerClient(storageContainerName);
+            _blobContainerClient.CreateIfNotExists();
 
         }
-        public async Task Send(Guid messageId)
+
+        public async Task SendTopic1(Guid messageId)
         {
             bool blobCreated = false;
             bool messageSent = false;
@@ -64,13 +65,35 @@ namespace BLL
                 ServiceBusMessage message = new ServiceBusMessage(JsonConvert.SerializeObject(messageId.ToString()));
                 message.MessageId = messageId.ToString();
                 message.ContentType = "application/json";
-                await _sender.SendMessageAsync(message).ConfigureAwait(false);
+                await _sender1.Value.SendMessageAsync(message).ConfigureAwait(false);
                 messageSent = true;
-                _logger.LogInformation("Created message and cooresponding blob with message id {messageId}", messageId);
+                _logger.LogInformation("Topic 1: Created message and cooresponding blob with message id {messageId}", messageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occured in {className}.{methodName}. Blob Sent: {blobCreated}, Message Send: {messageSent}", nameof(Sender), nameof(Send), blobCreated, messageSent);
+                _logger.LogError(ex, "Error occured in {className}.{methodName} sending message ID {messageId}. Blob Sent: {blobCreated}, Message Send: {messageSent}", nameof(Sender), nameof(SendTopic1), blobCreated, messageSent, messageId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Pass thru message to next queue
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns></returns>
+        public async Task SendTopic2(Guid messageId)
+        {
+            try
+            {
+                ServiceBusMessage message = new ServiceBusMessage(JsonConvert.SerializeObject(messageId.ToString()));
+                message.MessageId = messageId.ToString();
+                message.ContentType = "application/json";
+                await _sender2.Value.SendMessageAsync(message).ConfigureAwait(false);
+                _logger.LogInformation("Topic 2: Created message and cooresponding blob with message id {messageId}", messageId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occured in {className}.{methodName} sending message ID {messageId}. ", nameof(Sender), nameof(SendTopic2), messageId);
                 throw;
             }
         }

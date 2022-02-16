@@ -1,4 +1,5 @@
 ﻿using BLL;
+using BO.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +32,9 @@ namespace ServiceBusProcessor
             builder.ConfigureLogging(ConfigureLogging);
             builder.ConfigureServices(services =>
             {
+
+                services.Configure<AzureTestHarnessOptions>(_configuration.GetSection(AzureTestHarnessOptions.AzureTestHarness));
+                services.AddSingleton<Sender>();
                 services.AddSingleton<Receiver>();
                 services.AddLogging();
             });
@@ -56,9 +60,6 @@ namespace ServiceBusProcessor
         {
             try
             {
-                string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-                _logger.Info("Environment while configuring app config is: [{environment}]", environment);
-
                 config.SetBasePath(Directory.GetCurrentDirectory())
                       .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                       .AddJsonFile("appsettings.json.user", optional: true, reloadOnChange: true)
