@@ -36,13 +36,15 @@ function main
         publishSource
     }
 
+    $deployOut = ""
+
     if($flags -contains "all" -or $flags -contains "template-deploy")
     {
         $deployOut = armDeploy
 
         if($flags -contains "all" -or $flags -contains "code-deploy")
         {
-            deploySource $deployOut.siteName $deployOut.siteResourceId
+            deploySource $deployOut.siteName $deployOut.siteResourceId $deployOut.preProductionSlotName
             Write-Host "Deployment complete make request to GET https://$($deployOut.siteHost)/api/message/$([Guid]::NewGuid()) to verify" -ForegroundColor Green
         }
     }
@@ -60,7 +62,7 @@ function main
 function initializeGroup
 {
     if($(az group exists --name $groupName) -eq $true){
-        Write-Host "Group $groupName exists delete and recreate from template?" -ForegroundColor Green
+        Write-Host "Group $groupName exists delete and recreate from template? (y/n)" -ForegroundColor Green
         az group delete --name $groupName | out-host
     }
     
@@ -72,14 +74,35 @@ function initializeGroup
 
 function armDeploy
 {
-    Write-Host "Deploying ARM template to Resource Group '$groupName'" -ForegroundColor Green
-    $deployResult = az deployment group create --name testHarness --resource-group $groupName --parameters "{ 'appName': { 'value':'$appName' } }" --template-file $tf | convertfrom-json
-    $deployOut = $deployResult.properties.outputs
-    if(-not $deployOut)
-    {
-        throw "ARM template deployment failed $?"
+    $existing = az webapp config appsettings list --name "$($appName)-web" --resource-group $groupName --subscription $subscription | convertfrom-json `
+        # Translate into just name/value so that the ARM template can dedup by comparing
+        | Select-Object name,value
+        
+    $parameters = @{
+        appName = @{
+            value = $appName
+        }
+        appSettings = @{
+            value = @{
+                settings = $existing
+            }
+        }
+        fromFileTest = @{
+            value = "Set in script"
+        }
     }
 
+    $parametersJson = $parameters | ConvertTo-Json -Compress -Depth 10 | ConvertTo-Json
+    write-host $parametersJson
+    Write-Host "Deploying ARM template to Resource Group '$groupName'" -ForegroundColor Green
+    $deployResult = az deployment group create --name testHarness --resource-group $groupName --parameters $parametersJson --template-file $tf | convertfrom-json
+    if(-not $deployResult -or -not $deployResult.properties -or -not $deployResult.properties.outputs)
+    {
+        Write-Host $deployResult
+        throw "ARM template deployment failed $?"
+    }
+    $deployOut = $deployResult.properties.outputs
+    write-host ($deployOut | convertto-json -Depth 10)
     # Flatten deploy out object
     $deployOut | get-member -membertype properties | ForEach-Object{ $deployOut.$($_.Name) = $deployOut.$($_.Name).value }
     return $deployOut
@@ -105,11 +128,29 @@ function deploySource
 {
     param(
         [string] $siteName,
-        [string] $siteResourceId
+        [string] $siteResourceId,
+        [string] $deploymentSlot
     )
 
-    Write-Host "Deploying source to $siteName" -ForegroundColor Green
-    az webapp deployment source config-zip --ids $siteResourceId --src .\Deploy\publish.zip | out-host
+    if($deploymentSlot){
+        Write-Host "Deploying source to $siteName/$deploymentSlot" -ForegroundColor Green
+        az webapp deployment source config-zip --ids $siteResourceId --slot $deploymentSlot --src .\Deploy\publish.zip | out-host
+        if(-not $?)
+        {
+            throw "'az webapp deployment failed"
+        }
+        Write-Host "Swapping slot $deploymentSlot to production" -ForegroundColor Green
+        az webapp deployment slot swap --ids $siteResourceId --slot $deploymentSlot | out-host
+
+    } else {
+        Write-Host "Deploying source to $siteName" -ForegroundColor Green
+        az webapp deployment source config-zip --ids $siteResourceId --src .\Deploy\publish.zip | out-host
+    }       
+
+    if(-not $?)
+    {
+        throw "'az webapp deployment failed"
+    }
 }
 
 main

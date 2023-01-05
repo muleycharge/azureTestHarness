@@ -27,10 +27,14 @@
     "insightsName": "[concat(parameters('appName'),'-insights')]",
     "storageName": "[toLower(concat(parameters('appName'),'storage'))]",
     "serviceBusName": "[concat(parameters('appName'),'-messaging')]",
-    "testTopic1Name": "test-topic1",
-    "testTopic2Name": "test-topic2",
-    "testSubscriptionName": "test-sub",
-    "testBlobContainerName": "test-blobs"
+    "Test1Topic1Name": "test1-topic1",
+    "Test1Topic2Name": "test1-topic2",
+    "test1SubscriptionName": "test1-sub",
+    "Test2TopicName": "test2-topic",
+    "test2Subscription1Name": "test2-sub1",
+    "test2Subscription2Name": "test2-sub2",
+    "testBlobContainerName": "test-blobs",
+    "preproductionSlotName": "PreProduction"
   },
   "resources": [
     {
@@ -160,7 +164,7 @@
         {
           "type": "Microsoft.ServiceBus/namespaces/topics",
           "apiVersion": "2021-06-01-preview",
-          "name": "[concat(variables('serviceBusName'), '/', variables('testTopic1Name'))]",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test1Topic1Name'))]",
           "dependsOn": [
             "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]"
           ],
@@ -181,7 +185,7 @@
         {
           "type": "Microsoft.ServiceBus/namespaces/topics",
           "apiVersion": "2021-06-01-preview",
-          "name": "[concat(variables('serviceBusName'), '/', variables('testTopic2Name'))]",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test1Topic2Name'))]",
           "dependsOn": [
             "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]"
           ],
@@ -202,11 +206,11 @@
         {
           "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
           "apiVersion": "2021-06-01-preview",
-          "name": "[concat(variables('serviceBusName'), '/', variables('testTopic1Name'), '/', variables('testSubscriptionName'))]",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test1Topic1Name'), '/', variables('test1SubscriptionName'))]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
-            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('testTopic1Name'))]"
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test1Topic1Name'))]"
           ],
           "properties": {
             "isClientAffine": false,
@@ -224,11 +228,11 @@
         {
           "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
           "apiVersion": "2021-06-01-preview",
-          "name": "[concat(variables('serviceBusName'), '/', variables('testTopic2Name'), '/', variables('testSubscriptionName'))]",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test1Topic2Name'), '/', variables('test1SubscriptionName'))]",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
-            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('testTopic2Name'))]"
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test1Topic2Name'))]"
           ],
           "properties": {
             "isClientAffine": false,
@@ -241,6 +245,101 @@
             "status": "Active",
             "enableBatchedOperations": true,
             "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S"
+          }
+        },
+        {
+          "type": "Microsoft.ServiceBus/namespaces/topics",
+          "apiVersion": "2021-06-01-preview",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test2TopicName'))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]"
+          ],
+          "properties": {
+            "maxMessageSizeInKilobytes": 256,
+            "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
+            "maxSizeInMegabytes": 5120,
+            "requiresDuplicateDetection": false,
+            "duplicateDetectionHistoryTimeWindow": "PT10M",
+            "enableBatchedOperations": true,
+            "status": "Active",
+            "supportOrdering": false,
+            "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+            "enablePartitioning": true,
+            "enableExpress": false
+          }
+        },
+        {
+          "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+          "apiVersion": "2021-06-01-preview",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test2TopicName'), '/', variables('test2Subscription1Name'))]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test2TopicName'))]"
+          ],
+          "properties": {
+            "isClientAffine": false,
+            "lockDuration": "PT1M",
+            "requiresSession": false,
+            "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
+            "deadLetteringOnMessageExpiration": true,
+            "deadLetteringOnFilterEvaluationExceptions": true,
+            "maxDeliveryCount": 10,
+            "status": "Active",
+            "enableBatchedOperations": true,
+            "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S"
+          }
+        },
+        {
+          "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions/rules",
+          "apiVersion": "2021-01-01-preview",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test2TopicName'), '/', variables('test2Subscription1Name'), '/',variables('test2Subscription1Name'),'-rule')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test2TopicName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test2TopicName'), variables('test2Subscription1Name'))]"
+          ],
+          "properties": {
+            "sqlFilter": {
+              "sqlExpression": "step=1"
+            }
+          }
+        },
+        {
+          "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+          "apiVersion": "2021-06-01-preview",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test2TopicName'), '/', variables('test2Subscription2Name'))]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test2TopicName'))]"
+          ],
+          "properties": {
+            "isClientAffine": false,
+            "lockDuration": "PT1M",
+            "requiresSession": false,
+            "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
+            "deadLetteringOnMessageExpiration": true,
+            "deadLetteringOnFilterEvaluationExceptions": true,
+            "maxDeliveryCount": 10,
+            "status": "Active",
+            "enableBatchedOperations": true,
+            "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S"
+          }
+        },
+        {
+          "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions/rules",
+          "apiVersion": "2021-01-01-preview",
+          "name": "[concat(variables('serviceBusName'), '/', variables('Test2TopicName'), '/', variables('test2Subscription2Name'), '/',variables('test2Subscription2Name'),'-rule')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('serviceBusName'), variables('Test2TopicName'))]",
+            "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test2TopicName'), variables('test2Subscription2Name'))]"
+          ],
+          "properties": {
+            "sqlFilter": {
+              "sqlExpression": "step=2"
+            }
           }
         }
       ]
@@ -308,16 +407,174 @@
         "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
       ],
+      "resources": [
+        {
+          "type": "config",
+          "apiVersion": "2021-03-01",
+          "name": "slotconfignames",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('siteName'))]"
+          ],
+          "properties": {
+            "appSettingNames": [ "WEBJOBS_STOPPED" ]
+          }
+        }
+      ],
       "properties": {
         "name": "[variables('siteName')]",
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('serverName'))]",
+        "connectionStrings": [],
+        "appSettings": [
+          {
+            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+            "value": "[reference(resourceId('Microsoft.Insights/components', variables('insightsName')), '2014-04-01').InstrumentationKey]"
+          },
+          {
+            "name": "AzureWebJobsStorage",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(variables('storageName'), '2019-04-01').keys[0].value)]"
+          },
+          {
+            "name": "AzureWebJobsDashboard",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(variables('storageName'), '2019-04-01').keys[0].value)]"
+          },
+          {
+            "name": "AzureTestHarness:ApplicationInsightsKey",
+            "value": "[reference(resourceId('Microsoft.Insights/components', variables('insightsName')), '2014-04-01').InstrumentationKey]"
+          },
+          {
+            "name": "AzureTestHarness:BlobStorage:ConnectionString",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(variables('storageName'), '2019-04-01').keys[0].value)]"
+          },
+          {
+            "name": "AzureTestHarness:BlobStorage:TestContainerName",
+            "value": "[variables('testBlobContainerName')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:ConnectionString",
+            "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules',variables('serviceBusName'),'RootManageSharedAccessKey'),'2015-08-01').primaryConnectionString]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test1Topic1Name",
+            "value": "[variables('Test1Topic1Name')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test1Topic2Name",
+            "value": "[variables('Test1Topic2Name')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test1SubscriptionName",
+            "value": "[variables('test1SubscriptionName')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test2TopicName",
+            "value": "[variables('Test2TopicName')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test2Subscription1Name",
+            "value": "[variables('test2Subscription1Name')]"
+          },
+          {
+            "name": "AzureTestHarness:ServiceBus:Test2Subscription2Name",
+            "value": "[variables('test2Subscription2Name')]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2018-11-01",
+      "name": "[concat(variables('siteName'), '/web')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('siteName'))]"
+      ],
+      "properties": {
+        "numberOfWorkers": "1",
+        "defaultDocuments": "[variables('defaultDocuments')]",
+        "netFrameworkVersion": "v5.0",
+        "phpVersion": "5.6",
+        "requestTracingEnabled": "false",
+        "remoteDebuggingEnabled": "false",
+        "httpLoggingEnabled": "false",
+        "logsDirectorySizeLimit": "35",
+        "detailedErrorLoggingEnabled": "false",
+        "publishingUsername": "[concat('$', variables('siteName'))]",
+        "scmType": "None",
+        "use32BitWorkerProcess": "true",
+        "webSocketsEnabled": "false",
+        "alwaysOn": "true",
+        "managedPipelineMode": "Integrated",
+        "virtualApplications": [
+          {
+            "virtualPath": "/",
+            "physicalPath": "site\\wwwroot",
+            "preloadEnabled": "true"
+          }
+        ],
+        "loadBalancing": "LeastRequests",
+        "experiments": {
+          "rampUpRules": []
+        },
+        "autoHealEnabled": "false",
+        "localMySqlEnabled": "false",
+        "ipSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": "1",
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": "1",
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictionsUseMain": "false",
+        "http20Enabled": "false",
+        "minTlsVersion": "1.2",
+        "ftpsState": "AllAllowed",
+        "reservedInstanceCount": "0"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/slots",
+      "apiVersion": "2021-03-01",
+      "name": "[concat(variables('siteName'), '/', variables('preproductionSlotName'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('siteName'))]"
+      ],
+      "kind": "app",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "enabled": true,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('serverName'))]",
+        "reserved": false,
         "siteConfig": {
+          "numberOfWorkers": 1,
+          "acrUseManagedIdentityCreds": false,
+          "alwaysOn": false,
+          "http20Enabled": false,
+          "functionAppScaleLimit": 0,
+          "minimumElasticInstanceCount": 0,
           "connectionStrings": [],
           "appSettings": [
             {
+              "name": "WEBJOBS_STOPPED",
+              "value": "1"
+            },
+            {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
               "value": "[reference(resourceId('Microsoft.Insights/components', variables('insightsName')), '2014-04-01').InstrumentationKey]"
-            }, 
+            },
             {
               "name": "AzureWebJobsStorage",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(variables('storageName'), '2019-04-01').keys[0].value)]"
@@ -343,81 +600,42 @@
               "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules',variables('serviceBusName'),'RootManageSharedAccessKey'),'2015-08-01').primaryConnectionString]"
             },
             {
-              "name": "AzureTestHarness:ServiceBus:TestTopic1Name",
-              "value": "[variables('testTopic1Name')]"
+              "name": "AzureTestHarness:ServiceBus:Test1Topic1Name",
+              "value": "[variables('Test1Topic1Name')]"
             },
             {
-              "name": "AzureTestHarness:ServiceBus:TestTopic2Name",
-              "value": "[variables('testTopic2Name')]"
+              "name": "AzureTestHarness:ServiceBus:Test1Topic2Name",
+              "value": "[variables('Test1Topic2Name')]"
             },
             {
-              "name": "AzureTestHarness:ServiceBus:TestSubscriptionName",
-              "value": "[variables('testSubscriptionName')]"
+              "name": "AzureTestHarness:ServiceBus:Test1SubscriptionName",
+              "value": "[variables('test1SubscriptionName')]"
+            },
+            {
+              "name": "AzureTestHarness:ServiceBus:Test2TopicName",
+              "value": "[variables('Test2TopicName')]"
+            },
+            {
+              "name": "AzureTestHarness:ServiceBus:Test2Subscription1Name",
+              "value": "[variables('test2Subscription1Name')]"
+            },
+            {
+              "name": "AzureTestHarness:ServiceBus:Test2Subscription2Name",
+              "value": "[variables('test2Subscription2Name')]"
             }
           ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Web/sites/config",
-      "apiVersion": "2018-11-01",
-      "name": "[concat(variables('siteName'), '/web')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', variables('siteName'))]"
-      ],
-      "properties": {
-        "numberOfWorkers": 1,
-        "defaultDocuments": "[variables('defaultDocuments')]",
-        "netFrameworkVersion": "v5.0",
-        "phpVersion": "5.6",
-        "requestTracingEnabled": false,
-        "remoteDebuggingEnabled": false,
-        "httpLoggingEnabled": false,
-        "logsDirectorySizeLimit": 35,
-        "detailedErrorLoggingEnabled": false,
-        "publishingUsername": "[concat('$', variables('siteName'))]",
-        "scmType": "None",
-        "use32BitWorkerProcess": true,
-        "webSocketsEnabled": false,
-        "alwaysOn": true,
-        "managedPipelineMode": "Integrated",
-        "virtualApplications": [
-          {
-            "virtualPath": "/",
-            "physicalPath": "site\\wwwroot",
-            "preloadEnabled": true
-          }
-        ],
-        "loadBalancing": "LeastRequests",
-        "experiments": {
-          "rampUpRules": []
         },
-        "autoHealEnabled": false,
-        "localMySqlEnabled": false,
-        "ipSecurityRestrictions": [
-          {
-            "ipAddress": "Any",
-            "action": "Allow",
-            "priority": 1,
-            "name": "Allow all",
-            "description": "Allow all access"
-          }
-        ],
-        "scmIpSecurityRestrictions": [
-          {
-            "ipAddress": "Any",
-            "action": "Allow",
-            "priority": 1,
-            "name": "Allow all",
-            "description": "Allow all access"
-          }
-        ],
-        "scmIpSecurityRestrictionsUseMain": false,
-        "http20Enabled": false,
-        "minTlsVersion": "1.2",
-        "ftpsState": "AllAllowed",
-        "reservedInstanceCount": 0
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": false,
+        "clientCertEnabled": false,
+        "clientCertMode": "Required",
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": false,
+        "redundancyMode": "None",
+        "storageAccountRequired": false,
+        "keyVaultReferenceIdentity": "SystemAssigned"
       }
     }
   ],
@@ -438,6 +656,14 @@
       "type": "string",
       "value": "[resourceId('Microsoft.Web/sites', variables('siteName'))]"
     },
+    "preProductionSlotName": {
+      "type": "string",
+      "value": "[variables('preproductionSlotName')]"
+    },
+    "sitePreProductionResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites/slots', variables('siteName'), variables('preproductionSlotName'))]"
+    },
     "appInsightsKey": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Insights/components', variables('insightsName')), '2014-04-01').InstrumentationKey]"
@@ -446,31 +672,43 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Web/sites', variables('siteName')), '2018-02-01').defaultHostName]"
     },
-    "serviceBusSubscription1ResourceId": {
+    "test1Subscription1ResourceId": {
       "type": "string",
-      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('testTopic1Name'), variables('testSubscriptionName'))]"
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test1Topic1Name'), variables('test1SubscriptionName'))]"
     },
-    "serviceBusSubscription2ResourceId": {
+    "test1Subscription2ResourceId": {
       "type": "string",
-      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('testTopic2Name'), variables('testSubscriptionName'))]"
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test1Topic2Name'), variables('test1SubscriptionName'))]"
+    },
+    "test2Subscription1ResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test2TopicName'), variables('test2Subscription1Name'))]"
+    },
+    "test2Subscription2ResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('serviceBusName'), variables('Test2TopicName'), variables('test2Subscription2Name'))]"
     },
     "serviceBusConnection": {
       "type": "string",
       "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules',variables('serviceBusName'),'RootManageSharedAccessKey'),'2015-08-01').primaryConnectionString]"
     },
-    "testTopic1Name": {
+    "Test1Topic1Name": {
       "type": "string",
-      "value": "[variables('testTopic1Name')]"
+      "value": "[variables('Test1Topic1Name')]"
     },
-    "testTopic2Name": {
+    "Test1Topic2Name": {
       "type": "string",
-      "value": "[variables('testTopic2Name')]"
+      "value": "[variables('Test1Topic2Name')]"
+    },
+    "Test2TopicName": {
+      "type": "string",
+      "value": "[variables('Test2TopicName')]"
     },
     "storageConnectionString": {
       "type": "string",
       "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(variables('storageName'), '2019-04-01').keys[0].value)]"
     },
-    "storageContainerName":{
+    "storageContainerName": {
       "type": "string",
       "value": "[variables('testBlobContainerName')]"
     }

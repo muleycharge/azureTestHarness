@@ -41,12 +41,8 @@ namespace ServiceBusProcessor
             builder.ConfigureWebJobs(b =>
             {
                 b.AddAzureStorageCoreServices();
-
-                b.AddServiceBus(q =>
-                {
-                    q.MaxMessageBatchSize = 20;
-                    q.AutoCompleteMessages = true;
-                });
+                b.AddDashboardLogging();
+                b.AddServiceBus();
             });
 
             IHost host = builder.Build();
@@ -83,6 +79,7 @@ namespace ServiceBusProcessor
         private static void ConfigureLogging(ILoggingBuilder loggingBuilder)
         {
             loggingBuilder.ClearProviders();
+            loggingBuilder.AddConsole();
             loggingBuilder.SetMinimumLevel(LogLevel.Trace);
             string nlogConfigFile = "nlog.config";
             loggingBuilder.AddNLog(nlogConfigFile);

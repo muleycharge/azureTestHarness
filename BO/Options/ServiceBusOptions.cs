@@ -6,12 +6,16 @@
 
         public string ConnectionString { get; set; }
 
-        public string TestTopic1Name { get; set; }
+        public string Test1Topic1Name { get; set; }
 
-        public string TestSubscription1Name { get; set; }
+        public string Test1Topic2Name { get; set; }
 
-        public string TestTopic2Name { get; set; }
+        public string Test1SubscriptionName { get; set; }
 
-        public string TestSubscription2Name { get; set; }
+        public string Test2TopicName { get; set; }
+
+        public string Test2Subscription1Name { get; set; }
+
+        public string Test2Subscription2Name { get; set; }
     }
 }

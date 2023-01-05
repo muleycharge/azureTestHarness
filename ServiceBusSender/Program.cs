@@ -25,7 +25,7 @@ namespace ServiceBusSender
                 cancelToken.Cancel();
             };
 
-            (await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(SendMessages).ConfigureAwait(false))
+            (await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(RunTest).ConfigureAwait(false))
                 .WithNotParsed(errors =>
                 {
                     var jsonString = JsonConvert.SerializeObject(
@@ -36,10 +36,9 @@ namespace ServiceBusSender
                         Console.WriteLine(error);
                     }
                 });
-
         }
 
-        private static async Task SendMessages(Options options)
+        private static async Task RunTest(Options options)
         {
             TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
             configuration.InstrumentationKey = options.ApplicationInsightsKey;
@@ -47,17 +46,35 @@ namespace ServiceBusSender
 
             try
             {
-                Sender sender = new Sender(options.StorageConnection, options.StorageContainer, options.ServiceBusConnection, options.TopicName);
+                Console.WriteLine($"Sending {options.MessageCount} messages");
+                Sender sender = new Sender(options.StorageConnection, options.StorageContainer, options.ServiceBusConnection, options.Test1TopicName, options.Test2TopicName);
                 Task[] tasks = new Task[options.MessageCount];
                 for (int i = 0; i < options.MessageCount; i++)
                 {
                     Guid messageId = Guid.NewGuid();
-                    tasks[i] = sender.SendTopic1(messageId)
+
+                    if (options.TestCase == Options.TestCaseEnum.Test1)
+                    {
+                        tasks[i] = sender.SendTest1Topic1(messageId)
                         .ContinueWith(t =>
                         {
                             Console.WriteLine(messageId);
                             return t;
                         });
+                    }
+                    else if (options.TestCase == Options.TestCaseEnum.Test2)
+                    {
+                        tasks[i] = sender.SendTest2Subscription1(messageId)
+                        .ContinueWith(t =>
+                        {
+                            Console.WriteLine(messageId);
+                            return t;
+                        });
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Invalid test case");
+                    }
                 }
 
                 await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -65,11 +82,11 @@ namespace ServiceBusSender
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.StackTrace.ToString());
                 telemetryClient.TrackException(ex, properties: new Dictionary<string, string>() { { "Message", "Failed to send batch" } });
 
                 throw;
             }
-
         }
     }
 }

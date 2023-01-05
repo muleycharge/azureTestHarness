@@ -17,19 +17,36 @@ namespace AzureTestHarness.Controllers.Api
             _sender = sender;
         }
 
-        [HttpGet()]
-        public async Task<IActionResult> Get()
+        [HttpGet("test1")]
+        public async Task<IActionResult> Test1Get()
         {
             Guid messageId = Guid.NewGuid();
-            await _sender.SendTopic1(messageId).ConfigureAwait(false);
+            await _sender.SendTest1Topic1(messageId).ConfigureAwait(false);
 
             return Ok(messageId);
         }
 
-        [HttpGet("{messageId}")]
-        public async Task<IActionResult> Get(Guid messageId)
+        [HttpGet("test1/{messageId}")]
+        public async Task<IActionResult> Test1Get(Guid messageId)
         {
-            await _sender.SendTopic1(messageId).ConfigureAwait(false);
+            await _sender.SendTest1Topic1(messageId).ConfigureAwait(false);
+
+            return Ok(messageId);
+        }
+
+        [HttpGet("test2")]
+        public async Task<IActionResult> Test2Get()
+        {
+            Guid messageId = Guid.NewGuid();
+            await _sender.SendTest1Topic1(messageId).ConfigureAwait(false);
+
+            return Ok(messageId);
+        }
+
+        [HttpGet("test2/{messageId}")]
+        public async Task<IActionResult> Test2Get(Guid messageId)
+        {
+            await _sender.SendTest2Subscription1(messageId).ConfigureAwait(false);
 
             return Ok(messageId);
         }

@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
 using BO.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,17 +30,24 @@ namespace BLL
             }
         }
 
-        public async Task Receive(Guid messageId)
+        public async Task ReceiveTest(Guid messageId)
         {
             try
             {
-                await _blobContainerClient.DeleteBlobAsync(messageId.ToString()).ConfigureAwait(false);
+                Response<bool> response = await _blobContainerClient.DeleteBlobIfExistsAsync(messageId.ToString()).ConfigureAwait(false);
+                if (response.Value)
+                {
+                    _logger.LogInformation("Received message and deleted cooresponding blob with message id {messageId}", messageId);
+                }
+                else
+                {
+                    _logger.LogWarning("Recieved message but no cooresponding blob exists for message ID {messageId}, message likely a duplicate.", messageId);
+                }
 
-                _logger.LogInformation("Received message and deleted cooresponding blob with message id {messageId}", messageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occured in {className}.{methodName}. Failed to delete blob for message ID {messageId}", nameof(Receiver), nameof(Receive), messageId);
+                _logger.LogError(ex, "Error occured in {className}.{methodName}. Failed to delete blob for message ID {messageId}", nameof(Receiver), nameof(ReceiveTest), messageId);
                 throw;
             }
         }
